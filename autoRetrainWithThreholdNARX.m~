@@ -78,7 +78,7 @@ trainingCounter = 0;
 while (1)
     [xs,xis,ais,ts] = preparets(net,{},{},inputSeries);
     ys = net(ts,xis,ais); % ts is similar to actualV
-    actualV = cell2mat(originalData(currentPoint+errorCheckInterval:currentPoint+errorCheckInterval)); % this needs DELAY number of initial values (currentPoint, currentPoint +1) to predict.
+    actualV = cell2mat(originalData(currentPoint+delay:currentPoint+errorCheckInterval)); % this needs DELAY number of initial values (currentPoint, currentPoint +1) to predict.
     error = mape(actualV,cell2mat(ys(1:end)));
     disp(currentPoint+errorCheckInterval);
     Error = [Error error];
