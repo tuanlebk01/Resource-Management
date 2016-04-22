@@ -11,7 +11,8 @@ Error = [];
 Time = [];
 ErrorT = []; % to compute threshold
 G = 0; %
-errorTolerence = 500;
+errorTolerance = 500;
+efficient = 0.2; % threshold = targetMean + targetStd*efficient
 alarm = 0;
 CurrentPoints = []; % to store ponts at which Error reached to the threshold.
 errorCheckInterval = 3; % MUST BE HIGHER DELAY.
@@ -59,7 +60,6 @@ inputSeries1 = originalData(index);
 ys = net(ts,xis,ais); % ts is similar to actualV
 actualV = cell2mat(originalData(currentPoint1+delay:n)); % this needs DELAY number of initial values (currentPoint, currentPoint +1) to predict.
 error1 = mape(actualV,cell2mat(ys(1:end)));
-fprintf('MAPE without re-training: %f\n',error1);
 s = round(n*inputPercent/100);
 fprintf('The training data size: %d\n',s);
 %% compute threshold based on error standard variation.
@@ -70,15 +70,20 @@ for i = 1:tempN
 end
 targetMean = mean(ErrorT(1:windowSize));
 targetStd = std(ErrorT(1:windowSize));
-threshold = targetMean + targetStd;
+threshold = targetMean + targetStd*efficient;
+fprintf('Target Mean: %f\n',targetMean);
+fprintf('Target Standard Variation: %f\n',targetStd);
+fprintf('Threshold: %f\n',threshold);
+fprintf('Error Tolerance: %f\n',errorTolerance);
+
 %% compute error with an initial interval and then increase this one by one until reaching the threshold.
 currentPoint = round(n*inputPercent/100); % the end point of input data.
-index = currentPoint:currentPoint+errorCheckInterval; % compute error with first errorCheckInterval data points.
+index = currentPoint-delay:currentPoint; % compute error with first errorCheckInterval data points.
 inputSeries = originalData(index);
 while (1)
-    [xs,xis,ais,ts] = preparets(net,{},{},inputSeries);
-    ys = net(ts,xis,ais); % ts is similar to actualV
-    actualV = cell2mat(originalData(currentPoint+delay:currentPoint+errorCheckInterval)); % this needs DELAY number of initial values (currentPoint, currentPoint +1) to predict.
+    [xT,xiT,aiT,tT] = preparets(net,{},{},inputSeries);
+    ys = net(tT,xiT,aiT); % ts is similar to actualV
+    actualV = cell2mat(tT(end)); % this needs DELAY number of initial values (currentPoint, currentPoint +1) to predict.
     error = mape(actualV,cell2mat(ys(1:end)));
     disp(currentPoint+errorCheckInterval);
     Error = [Error error];
@@ -86,7 +91,7 @@ while (1)
      if error > threshold
         g = error - threshold;
         G = G + g;
-        if G > errorTolerence
+        if G > errorTolerance
             disp('Alarm turn on')
             alarm = 1;
             G = 0;
@@ -106,34 +111,30 @@ while (1)
             disp('Training failed');
         end
         trainingCounter = trainingCounter + 1;
-        M{trainingCounter} = Error; % store Error in a cell.
-        Error = []; % reset this array.
         errorCheckInterval = fixedErrorCheckInterval;
         if currentPoint+errorCheckInterval > n
             CurrentPoints = [CurrentPoints length(originalData)];
-            M{trainingCounter} = Error;
+            Error = [Error error];
             disp('reached to the end of the series in training phase')
             break
         end  
-        index = currentPoint:currentPoint+errorCheckInterval;
+        index = currentPoint+errorCheckInterval-delay:currentPoint+errorCheckInterval;
         inputSeries = originalData(index); % update input data.
     else
         % increase errorCheckInterval.
         errorCheckInterval = errorCheckInterval + increment;
         if currentPoint+errorCheckInterval > n
             CurrentPoints = [CurrentPoints length(originalData)];
-            Error = [Error error]; %NOTE HERE!
-            M{trainingCounter} = Error;
+            Error = [Error error];
             disp('reached to the end of the series increament phase')
             break
         end
-        index = currentPoint:currentPoint+errorCheckInterval;
+        index = currentPoint+errorCheckInterval-delay:currentPoint+errorCheckInterval;
         inputSeries = originalData(index);
     end
     if trainingCounter > 10000 || currentPoint+errorCheckInterval > n
         CurrentPoints = [CurrentPoints length(originalData)];
-        Error = [Error error]; %NOTE HERE!
-        M{trainingCounter} = Error;
+        Error = [Error error];
         disp('reached to the end of the series')
         break
     end
@@ -142,13 +143,9 @@ end
 
     
 %% compute mean of error durung a whole running.
-OverallError = [];
-for j = 1:length(CurrentPoints)-1
-    ErrorInTraining = mean(M{j});
-    OverallError = [OverallError ErrorInTraining];
-end
-overallMAPE = mean(OverallError);
-fprintf('MAPE with re-training: %d\n',c);
+
+overallMAPE = mean(Error);
+fprintf('MAPE with re-training: %d\n',overallMAPE);
 fprintf('MAPE without re-training: %d\n',error1);
 
 %% plot
@@ -169,14 +166,9 @@ xlabel('Time with 5-minute interval')
 ylabel('CPU consumption');
 title('CPU consumption in the Google trace');
 subplot(3,1,2);
-for j = 1:length(CurrentPoints)-1
-    if size(M{j},2) == 1
-         plot([CurrentPoints(j)+delay:CurrentPoints(j+1)],M{j},'+');
-    else
-         plot([CurrentPoints(j)+delay:CurrentPoints(j+1)],M{j});
-    end
-    hold on
-end
+ePoint = n;
+sPoint = n - length(Error);
+plot([sPoint:ePoint],Error);
 xlabel('Time with 5-minute interval')
 ylabel('MAPE (%)')
 title('One-step Prediction using NARX')
