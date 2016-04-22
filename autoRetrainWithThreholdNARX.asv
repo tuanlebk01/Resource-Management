@@ -67,75 +67,78 @@ for i = 1:tempN
     tempError = mape(actualV(i),cell2mat(ys(i)));
     ErrorT = [ErrorT tempError];
 end
-targetMean = mean(ErrorT(1:windowSize/2));
-targetStd = std(ErrorT(1:windowSize/2));
-threshold = targetMean + targetStd*0.1;
+targetMean = mean(ErrorT(1:windowSize));
+targetStd = std(ErrorT(1:windowSize));
+threshold = targetMean + targetStd*5;
+return
 %% compute error with an initial interval and then increase this one by one until reaching the threshold.
 currentPoint = round(n*inputPercent/100); % the end point of input data.
 index = currentPoint:currentPoint+errorCheckInterval; % compute error with first errorCheckInterval data points.
 inputSeries = originalData(index);
 trainingCounter = 0;
-while (1)
-    [xs,xis,ais,ts] = preparets(net,{},{},inputSeries);
-    ys = net(ts,xis,ais); % ts is similar to actualV
-    actualV = cell2mat(originalData(currentPoint+delay:currentPoint+errorCheckInterval)); % this needs DELAY number of initial values (currentPoint, currentPoint +1) to predict.
-    error = mape(actualV,cell2mat(ys(1:end)));
-    disp(currentPoint+errorCheckInterval);
-    Error = [Error error];
-     if error > threshold
-        g = error - threshold;
-        G = G + g;
-        if G > 500
-            disp('Alarm turn on')
-            alarm = 1;
-            G = 0;
+if trainingOption == 1;
+    while (1)
+        [xs,xis,ais,ts] = preparets(net,{},{},inputSeries);
+        ys = net(ts,xis,ais); % ts is similar to actualV
+        actualV = cell2mat(originalData(currentPoint+delay:currentPoint+errorCheckInterval)); % this needs DELAY number of initial values (currentPoint, currentPoint +1) to predict.
+        error = mape(actualV,cell2mat(ys(1:end)));
+        disp(currentPoint+errorCheckInterval);
+        Error = [Error error];
+         if error > threshold
+            g = error - threshold;
+            G = G + g;
+            if G > 500
+                disp('Alarm turn on')
+                alarm = 1;
+                G = 0;
+            end
+         end  
+        if alarm == 1
+            % re-train with a sliding window.
+            alarm = 0;
+            disp('Training');
+            CurrentPoints = [CurrentPoints currentPoint];
+            currentPoint = currentPoint+errorCheckInterval; % update the current point.
+            inputData = originalData(1:currentPoint); % NOTE: It may be large.
+            tic
+            [net,code] = smartTraining(net,inputData,windowSize,50);
+            t = toc;
+            Time = [Time t];
+            if code == 0
+                disp('Training failed');
+            end
+            trainingCounter = trainingCounter + 1;
+            M{trainingCounter} = Error; % store Error in a cell.
+            Error = []; % reset this array.
+            errorCheckInterval = fixedErrorCheckInterval;
+            if currentPoint+errorCheckInterval > n
+                CurrentPoints = [CurrentPoints length(originalData)];
+                M{trainingCounter} = Error;
+                disp('reached to the end of the series in training phase')
+                break
+            end  
+            index = currentPoint:currentPoint+errorCheckInterval;
+            inputSeries = originalData(index); % update input data.
+        else
+            % increase errorCheckInterval.
+            errorCheckInterval = errorCheckInterval + increment;
+            if currentPoint+errorCheckInterval > n
+                CurrentPoints = [CurrentPoints length(originalData)];
+                Error = [Error error]; %NOTE HERE!
+                M{trainingCounter} = Error;
+                disp('reached to the end of the series increament phase')
+                break
+            end
+            index = currentPoint:currentPoint+errorCheckInterval;
+            inputSeries = originalData(index);
         end
-     end  
-    if alarm == 1
-        % re-train with a sliding window.
-        disp('Training');
-        alarm = 0; % reset alarm.
-        CurrentPoints = [CurrentPoints currentPoint];
-        currentPoint = currentPoint+errorCheckInterval; % update the current point.
-        inputData = originalData(1:currentPoint); % NOTE: It may be large.
-        tic
-        [net,code] = smartTraining(net,inputData,windowSize,50);
-        t = toc;
-        Time = [Time t];
-        if code == 0
-            disp('Training failed');
-        end
-        trainingCounter = trainingCounter + 1;
-        M{trainingCounter} = Error; % store Error in a cell.
-        Error = []; % reset this array.
-        errorCheckInterval = fixedErrorCheckInterval;
-        if currentPoint+errorCheckInterval > n
-            CurrentPoints = [CurrentPoints length(originalData)];
-            M{trainingCounter} = Error;
-            disp('reached to the end of the series in training phase')
-            break
-        end  
-        index = currentPoint+errorCheckInterval-delay:currentPoint+errorCheckInterval;
-        inputSeries = originalData(index); % update input data.
-    else
-        % increase errorCheckInterval.
-        errorCheckInterval = errorCheckInterval + increment;
-        if currentPoint+errorCheckInterval > n
+        if trainingCounter > 10000 || currentPoint+errorCheckInterval > n
             CurrentPoints = [CurrentPoints length(originalData)];
             Error = [Error error]; %NOTE HERE!
             M{trainingCounter} = Error;
-            disp('reached to the end of the series increament phase')
+            disp('reached to the end of the series')
             break
         end
-        index = currentPoint+errorCheckInterval-delay:currentPoint+errorCheckInterval;
-        inputSeries = originalData(index);
-    end
-    if trainingCounter > 10000 || currentPoint+errorCheckInterval > n
-        CurrentPoints = [CurrentPoints length(originalData)];
-        Error = [Error error]; %NOTE HERE!
-        M{trainingCounter} = Error;
-        disp('reached to the end of the series')
-        break
     end
 end
 
@@ -147,7 +150,7 @@ for j = 1:length(CurrentPoints)-1
     OverallError = [OverallError ErrorInTraining];
 end
 overallMAPE = mean(OverallError);
-fprintf('MAPE with re-training: %d\n',overallMAPE);
+fprintf('MAPE with re-training: %d\n',c);
 fprintf('MAPE without re-training: %d\n',error1);
 
 %% plot
