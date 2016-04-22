@@ -1,25 +1,25 @@
 %%%%%   ANFIS model experiments for auto-retraining with threshold.
 %% load data
 clear
-load cpuFiveMinuteInterval
-originalData = con2seq(cpuMean); % original data.
+load ramOneMinuteInterval
+originalData = con2seq(ramMean); % original data.
 %% Option
 trainingOption = 1;
 %% initial values
 OverallMape = [];
 Error = [];
+ErrorForPlot = [];
 Time = [];
 ErrorT = []; % to compute threshold
 G = 0; % 
 alarm = 0;
 CurrentPoints = []; % to store ponts at which Error reached to the threshold.
-threshold = 6; % 5 percent.
 errorCheckInterval = 3; % MUST BE HIGHER DELAY.
 fixedErrorCheckInterval = 3; % errorCheckInterval = errorCheckInterval.
-windowSize = 500;
+windowSize = 2500;
 increment = 1; % the size of step in computing error.
-delay = 3;
-layerSize = 10;
+delay = 5;
+layerSize = 15;
 
 %% set what size of input used.
 n = length(originalData);
@@ -58,7 +58,7 @@ inputSeries1 = originalData(index);
 ys = net(ts,xis,ais); % ts is similar to actualV
 actualV = cell2mat(originalData(currentPoint1+delay:n)); % this needs DELAY number of initial values (currentPoint, currentPoint +1) to predict.
 error1 = mape(actualV,cell2mat(ys(1:end)));
-fprintf('MAPE without re-training: %f\n',error1);
+%fprintf('MAPE without re-training: %f\n',error1);
 s = round(n*inputPercent/100);
 fprintf('The training data size: %d\n',s);
 %% compute threshold based on error standard variation.
@@ -69,32 +69,32 @@ for i = 1:tempN
 end
 targetMean = mean(ErrorT(1:windowSize/2));
 targetStd = std(ErrorT(1:windowSize/2));
-threshold = targetMean + targetStd*0.1;
+threshold = targetMean + targetStd;
 %% compute error with an initial interval and then increase this one by one until reaching the threshold.
 currentPoint = round(n*inputPercent/100); % the end point of input data.
-index = currentPoint:currentPoint+errorCheckInterval; % compute error with first errorCheckInterval data points.
+index = currentPoint+errorCheckInterval-delay:currentPoint+errorCheckInterval; % compute error with first errorCheckInterval data points.
 inputSeries = originalData(index);
 trainingCounter = 0;
 while (1)
-    [xs,xis,ais,ts] = preparets(net,{},{},inputSeries);
-    ys = net(ts,xis,ais); % ts is similar to actualV
+    [xT,xiT,aiT,tT] = preparets(net,{},{},inputSeries);
+    ys = net(tT,xiT,aiT); % ts is similar to actualV
     actualV = cell2mat(originalData(currentPoint+errorCheckInterval:currentPoint+errorCheckInterval)); % this needs DELAY number of initial values (currentPoint, currentPoint +1) to predict.
     error = mape(actualV,cell2mat(ys(1:end)));
-    disp(currentPoint+errorCheckInterval);
+    %disp(currentPoint+errorCheckInterval);
     Error = [Error error];
+    ErrorForPlot = [ErrorForPlot error];
      if error > threshold
         g = error - threshold;
         G = G + g;
-        if G > 500
-            disp('Alarm turn on')
+        if G > 5000
+%             disp('Alarm turn on')
             alarm = 1;
             G = 0;
         end
      end  
     if alarm == 1
         % re-train with a sliding window.
-        disp('Training');
-        alarm = 0; % reset alarm.
+        %disp('Training');
         CurrentPoints = [CurrentPoints currentPoint];
         currentPoint = currentPoint+errorCheckInterval; % update the current point.
         inputData = originalData(1:currentPoint); % NOTE: It may be large.
@@ -103,7 +103,7 @@ while (1)
         t = toc;
         Time = [Time t];
         if code == 0
-            disp('Training failed');
+            %disp('Training failed');
         end
         trainingCounter = trainingCounter + 1;
         M{trainingCounter} = Error; % store Error in a cell.
@@ -122,7 +122,6 @@ while (1)
         errorCheckInterval = errorCheckInterval + increment;
         if currentPoint+errorCheckInterval > n
             CurrentPoints = [CurrentPoints length(originalData)];
-            Error = [Error error]; %NOTE HERE!
             M{trainingCounter} = Error;
             disp('reached to the end of the series increament phase')
             break
@@ -132,22 +131,17 @@ while (1)
     end
     if trainingCounter > 10000 || currentPoint+errorCheckInterval > n
         CurrentPoints = [CurrentPoints length(originalData)];
-        Error = [Error error]; %NOTE HERE!
+        %Error = [Error]; %NOTE HERE!
         M{trainingCounter} = Error;
         disp('reached to the end of the series')
         break
     end
+    alarm = 0; % reset alarm.
 end
 
     
 %% compute mean of error durung a whole running.
-OverallError = [];
-for j = 1:length(CurrentPoints)-1
-    ErrorInTraining = mean(M{j});
-    OverallError = [OverallError ErrorInTraining];
-end
-overallMAPE = mean(OverallError);
-fprintf('MAPE with re-training: %d\n',overallMAPE);
+fprintf('MAPE with re-training: %d\n',mean(ErrorForPlot));
 fprintf('MAPE without re-training: %d\n',error1);
 
 %% plot
