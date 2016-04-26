@@ -37,9 +37,7 @@ net.divideParam.testRatio = 20/100;
 
 %% Train network
 [x,xi,ai,t] = preparets(net,{},{},T);
-tic
 [net,tr] = train(net,x,t,xi,ai);
-toc
 %% prediction with one-step ahead
 n = length(x);
 repeatT = 10;

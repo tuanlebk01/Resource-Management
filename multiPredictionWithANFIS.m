@@ -11,7 +11,10 @@ trnRatio = 0.6;
 valRatio = 0.2;
 maxStep = 1;
 overallError = [];
-M = cell(100,1); % to store MAPE array for each training 
+M = cell(100,1); % to store MAPE array for each training
+numMFs = [2 2 2 2];
+inmftype = 'gaussmf';
+outmftype = 'linear';
 %% multi-step prediction with 100 timesteps ahead.
 for timestep = 1:maxStep
     %% Create training, validation data for the method.
@@ -20,7 +23,7 @@ for timestep = 1:maxStep
     end
     trnData = Data(1:n*trnRatio,:);
     chkData = Data(n*trnRatio : n*trnRatio + valRatio*n,:);
-    fismat = genfis1(trnData);
+    fismat = genfis1(trnData,numMFs,inmftype,outmftype);
     [fismat1,error1,ss,fismat2,error2] = ...
           anfis(trnData,fismat,[],[0 0 0 0],chkData);
      %% repeat 100 times for every timesteps
