@@ -1,15 +1,15 @@
 %%%%%% Using ANFIS to predict workload %%%%%%%%%%%%%%%%%%%
 %% load data and initial data
 clear all
-load cpuMean
-x = cpuMean(1:end-500);  % input data which is removed the last 500 data points.;
+load cpuOneMinuteInterval.mat
+x = cpuMean;  % input data which is removed the last 500 data points.;
 n = length(x);
 interval = 100; % the length of testing data.
 errorCheck = [];
 errorTest = [];
 trnRatio = 0.6;
 valRatio = 0.2;
-maxStep = 100;
+maxStep = 1;
 overallError = [];
 M = cell(100,1); % to store MAPE array for each training 
 %% multi-step prediction with 100 timesteps ahead.

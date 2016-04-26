@@ -1,3 +1,4 @@
+load resourceUsage.mat
 % jobID = 17109330, type = 3
     meanErrorRAM = zeros(19,1); 
     meanErrorCPU = zeros(19,1);
@@ -5,9 +6,9 @@ for endPoint = 2:20
 
     predicedPoints = 5;
     TaskNumber = 171;
-    rows = resourceUsage.VarName3 == 17109330;
-    ram = resourceUsage.VarName6(rows);
-    cpu = resourceUsage.VarName7(rows);
+    rows = resourceUsage.JobID == 17109330;
+    ram = resourceUsage.CPU(rows);
+    cpu = resourceUsage.RAM(rows);
     job1 = table(ram(1:TaskNumber),cpu(1:TaskNumber));
     job1.Properties.VariableNames{1}='RAM';
     job1.Properties.VariableNames{2}='CPU';

@@ -52,6 +52,7 @@ net.trainParam.showWindow = false;
 if code == 0
     disp('Training failed');
 end
+
 %% runing without re-training.
 currentPoint1 = round(n*inputPercent/100); % the end point of input data.
 index = currentPoint1:n; % compute error with first errorCheckInterval data points.
@@ -168,7 +169,7 @@ title('CPU consumption in the Google trace');
 subplot(3,1,2);
 ePoint = n;
 sPoint = n - length(Error);
-plot([sPoint:ePoint],Error);
+plot([sPoint-1:ePoint],Error);
 xlabel('Time with 5-minute interval')
 ylabel('MAPE (%)')
 title('One-step Prediction using NARX')

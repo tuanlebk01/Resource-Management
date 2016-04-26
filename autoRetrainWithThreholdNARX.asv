@@ -52,6 +52,8 @@ net.trainParam.showWindow = false;
 if code == 0
     disp('Training failed');
 end
+%% A model with long training data. 70 percent of original data for training.
+[bestNet,code] = trainingNetwork(originalData(,net,70,1);
 %% runing without re-training.
 currentPoint1 = round(n*inputPercent/100); % the end point of input data.
 index = currentPoint1:n; % compute error with first errorCheckInterval data points.
@@ -87,7 +89,6 @@ while (1)
     error = mape(actualV,cell2mat(ys(1:end)));
     disp(currentPoint+errorCheckInterval);
     Error = [Error error];
-    errorForPlot = 
     % cusum, sum G up when error exceeds threshold.
      if error > threshold
         g = error - threshold;
@@ -115,7 +116,7 @@ while (1)
         errorCheckInterval = fixedErrorCheckInterval;
         if currentPoint+errorCheckInterval > n
             CurrentPoints = [CurrentPoints length(originalData)];
-            M{trainingCounter} = Error;
+            Error = [Error error];
             disp('reached to the end of the series in training phase')
             break
         end  
@@ -126,6 +127,7 @@ while (1)
         errorCheckInterval = errorCheckInterval + increment;
         if currentPoint+errorCheckInterval > n
             CurrentPoints = [CurrentPoints length(originalData)];
+            Error = [Error error];
             disp('reached to the end of the series increament phase')
             break
         end
@@ -134,6 +136,7 @@ while (1)
     end
     if trainingCounter > 10000 || currentPoint+errorCheckInterval > n
         CurrentPoints = [CurrentPoints length(originalData)];
+        Error = [Error error];
         disp('reached to the end of the series')
         break
     end
@@ -165,14 +168,9 @@ xlabel('Time with 5-minute interval')
 ylabel('CPU consumption');
 title('CPU consumption in the Google trace');
 subplot(3,1,2);
-for j = 1:length(CurrentPoints)-1
-    if size(M{j},2) == 1
-         plot([CurrentPoints(j)+delay:CurrentPoints(j+1)],M{j},'+');
-    else
-         plot([CurrentPoints(j)+delay:CurrentPoints(j+1)],M{j});
-    end
-    hold on
-end
+ePoint = n;
+sPoint = n - length(Error);
+plot([sPoint-1:ePoint],Error);
 xlabel('Time with 5-minute interval')
 ylabel('MAPE (%)')
 title('One-step Prediction using NARX')
