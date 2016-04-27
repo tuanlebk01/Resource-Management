@@ -13,7 +13,7 @@ maxStep = 1;
 overallError = [];
 M = cell(100,1); % to store MAPE array for each training
 numMFs = [2 2 2 2];
-inmftype = 'gaussmf';
+inmftype = 'gbellmf';
 outmftype = 'linear';
 %% multi-step prediction with 100 timesteps ahead.
 for timestep = 1:maxStep

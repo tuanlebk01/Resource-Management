@@ -52,8 +52,8 @@ while(1)
     end
         
         
-    Ram = mean(ram(firstP:lastP));
-    Cpu = mean(cpu(firstP:lastP));
+    Ram = sum(ram(firstP:lastP));
+    Cpu = sum(cpu(firstP:lastP));
     ramMean = [ramMean Ram];
     cpuMean = [cpuMean Cpu];
     tempStartTime = tempStartTime + timeInterval*timeUnit + 1*timeUnit;
