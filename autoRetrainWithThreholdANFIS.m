@@ -13,9 +13,11 @@ interval = 100; % the length of testing data.
 CurrentPoints = []; % to store ponts at which Error reached to the threshold.
 Time = [];
 Error = [];
-G = 0; % alarm
+alarm = 0; % alarm
+G = 0;
 trainingCounter = 0;
-threshold = 6; % 5 percent.
+drift = 500;
+efficient = 0.2; % NOTE: this can be changed by varying the size of input when computing mean and ST target.
 errorCheckInterval = 1; 
 fixedErrorCheckInterval = 1; % errorCheckInterval = errorCheckInterval.
 windowSize = 400;
@@ -24,7 +26,7 @@ trnRatio = 0.7;
 valRatio = 0.15;
 maxStep = 1;
 timestep = 1;
-M = cell(100,1); % to store MAPE array for each training 
+
 %% compare size of input used with the window size.
 if windowSize > endPoint
     s = round(m*inputPercent/100);
@@ -33,7 +35,7 @@ if windowSize > endPoint
     disp(s)
     return
 end
-%% One step prediction
+
 %% Create training, validation data for the method.
 for t = maxStep*3+1:m-maxStep
     Data(t,:) = [x(t-timestep*3) x(t-timestep*2) x(t-timestep) x(t) x(t+timestep)];
@@ -41,23 +43,47 @@ end
 trnData = Data(1:m*trnRatio,:);
 chkData = Data(m*trnRatio : m*trnRatio + valRatio*m,:);
 fismat = genfis1(trnData);
-[net] = ...
-      anfis(trnData,fismat,[],[0 0 0 0],chkData);
+[fismat1,error1,ss,net,error2] = ...
+          anfis(trnData,fismat,[],[0 0 0 0],chkData);
+  %% runing without re-training.
+currentPoint1 = round(n*inputPercent/100); % the end point of input data.
+index = currentPoint1:n; % compute error with first errorCheckInterval data points.
+for t1 = currentPoint1:n-1
+        testingData(t1-currentPoint1+1,:) = [originalData(t1) originalData(t1) originalData(t1) originalData(t1)];
+end
+index = currentPoint1+1:n; % time t + timestep
+predictedV = evalfis(testingData(:,:),net);
+errorNoRetraining = mape(predictedV,originalData(index));
+%% compute threshold based on error standard variation.
+ErrorT = [];
+tempN = length(predictedV);
+for i = 1:tempN
+    tempError = mape(originalData(currentPoint1+i),predictedV(i));
+    ErrorT = [ErrorT tempError];
+end
+targetMean = mean(ErrorT(1:windowSize));
+targetStd = std(ErrorT(1:windowSize));
+threshold = targetMean + targetStd*efficient;
+fprintf('Target Mean: %f\n',targetMean);
+fprintf('Target Standard Variation: %f\n',targetStd);
+fprintf('Threshold: %f\n',threshold);
+fprintf('Error Tolerance: %f\n',drift);
+
 %% fitst input series
-currentPoint = endPoint-1; % time t.
+currentPoint = endPoint; % time t.
 currentValue = originalData(currentPoint);
 inputSeries = [currentValue currentValue currentValue currentValue];
 %% Compute MAPE and do re-training when meeting the threshold.
 while(1)
     y = evalfis(inputSeries(:,:),net);
-    acutalValues = originalData(currentPoint+1:currentPoint+errorCheckInterval);
+    acutalValues = originalData(currentPoint+errorCheckInterval:currentPoint+errorCheckInterval);
     error = mape(acutalValues,y);
-    disp(error);
+    %disp(error);
     Error = [Error error];
     if error > threshold
         g = error - threshold;
         G = G + g;
-        if G > 500
+        if G > drift
             disp('Alarm turn on')
             alarm = 1;
             G = 0;
@@ -69,22 +95,16 @@ while(1)
         CurrentPoints = [CurrentPoints currentPoint];
         currentPoint = currentPoint+errorCheckInterval; % update the current point.
         inputData = originalData(1:currentPoint); % NOTE: It may be large.
-        tic 
         [net] = smartTrainingANFIS(net,inputData,windowSize,50);
-        t = toc;
-        Time = [Time t];
         trainingCounter = trainingCounter + 1;
-        M{trainingCounter} = Error; % store Error in a cell.
-        Error = []; % reset this array.
         errorCheckInterval = fixedErrorCheckInterval;
         if currentPoint+errorCheckInterval > n
             CurrentPoints = [CurrentPoints length(originalData)];
-            M{trainingCounter} = Error;
             disp('reached to the end of the series in training phase')
             break
         end  
         % create input data
-        for t1 = currentPoint:currentPoint+errorCheckInterval-1
+        for t1 = currentPoint+errorCheckInterval:currentPoint+errorCheckInterval
             inputSeries(t1-currentPoint+1,:) = [originalData(t1) originalData(t1) ...
                 originalData(t1) originalData(t1)];
         end
@@ -96,11 +116,10 @@ while(1)
         if currentPoint+errorCheckInterval > n
             CurrentPoints = [CurrentPoints length(originalData)];
             Error = [Error error];
-            M{trainingCounter} = Error;
             disp('reached to the end of the series increament phase')
             break
         end
-        for t1 = currentPoint:currentPoint+errorCheckInterval-1
+        for t1 = currentPoint+errorCheckInterval:currentPoint+errorCheckInterval
             inputSeries(t1-currentPoint+1,:) = [originalData(t1) originalData(t1) ...
                 originalData(t1) originalData(t1)];
         end
@@ -108,49 +127,45 @@ while(1)
     if trainingCounter > 10000 || currentPoint+errorCheckInterval > n
         CurrentPoints = [CurrentPoints length(originalData)];
         Error = [Error error];
-        M{trainingCounter} = Error;
         disp('reached to the end of the series')
         break
     end  
 end
 %% compute mean of error durung a whole running.
-OverallError = [];
-for j = 1:length(CurrentPoints)-1
-    ErrorInTraining = mean(M{j});
-    OverallError = [OverallError ErrorInTraining];
-end
-overallMAPE = mean(OverallError);
-fprintf('MAPE during the running: %d\n',overallMAPE);
+
+overallMAPE = mean(Error);
+fprintf('MAPE with re-training: %d\n',overallMAPE);
+fprintf('MAPE without re-training: %d\n',errorNoRetraining);
 
 %% plot
-figure(1)
-stem(CurrentPoints)
-xlabel('Number of training times')
-ylabel('Number of data points')
-title('The number of re-training for ANFIS model during the running')
-figure(2)
-plot(Time)
-xlabel('Number of training times')
-ylabel('Time (second)')
-title('Time to re-train ANFIS model')
-
-subplot(2,1,1);
-plot(originalData);
-xlabel('Time with 5-minute interval')
-ylabel('CPU consumption');
-title('CPU consumption in the Google trace');
-subplot(2,1,2);
-for j = 1:length(CurrentPoints)-1
-    if size(M{j},2) == 1
-         plot([CurrentPoints(j)+1:CurrentPoints(j+1)],M{j},'+');
-    else
-         plot([CurrentPoints(j)+1:CurrentPoints(j+1)],M{j});
-    end
-    hold on
-end
-xlabel('Time with 5-minute interval')
-ylabel('MAPE (%)')
-title('One-step Prediction using ANFIS')
+% figure(1)
+% stem(CurrentPoints)
+% xlabel('Number of training times')
+% ylabel('Number of data points')
+% title('The number of re-training for ANFIS model during the running')
+% figure(2)
+% plot(Time)
+% xlabel('Number of training times')
+% ylabel('Time (second)')
+% title('Time to re-train ANFIS model')
+% 
+% subplot(2,1,1);
+% plot(originalData);
+% xlabel('Time with 5-minute interval')
+% ylabel('CPU consumption');
+% title('CPU consumption in the Google trace');
+% subplot(2,1,2);
+% for j = 1:length(CurrentPoints)-1
+%     if size(M{j},2) == 1
+%          plot([CurrentPoints(j)+1:CurrentPoints(j+1)],M{j},'+');
+%     else
+%          plot([CurrentPoints(j)+1:CurrentPoints(j+1)],M{j});
+%     end
+%     hold on
+% end
+% xlabel('Time with 5-minute interval')
+% ylabel('MAPE (%)')
+% title('One-step Prediction using ANFIS')
     
 
 
