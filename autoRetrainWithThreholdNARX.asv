@@ -22,7 +22,6 @@ increment = 1; % the size of step in computing error.
 delay = 3;
 layerSize = 10;
 trainingCounter = 0;
-
 %% set what size of input used.
 n = length(originalData);
 inputPercent = 6.1; % the size of input data for training, validation and testing.
@@ -48,12 +47,7 @@ net.trainParam.showWindow = false;
 [x,xi,ai,t] = preparets(net,{},{},T); %NOTE: t is shilft left with T
 
 %% Training with threshold.
-[net,code] = trainingNetwork(T,net,70,1);
-if code == 0
-    disp('Training failed');
-end
-%% A model with long training data. 70 percent of original data for training.
-[bestNet,code] = trainingNetwork(originalData(,net,70,1);
+[net] = trainingNetwork(T,net,70,1);
 %% runing without re-training.
 currentPoint1 = round(n*inputPercent/100); % the end point of input data.
 index = currentPoint1:n; % compute error with first errorCheckInterval data points.
@@ -106,12 +100,9 @@ while (1)
         currentPoint = currentPoint+errorCheckInterval; % update the current point.
         inputData = originalData(1:currentPoint); % NOTE: It may be large.
         tic
-        [net,code] = smartTraining(net,inputData,windowSize,50);
+        [net] = smartTraining(net,inputData,windowSize,50);
         t = toc;
         Time = [Time t];
-        if code == 0
-            disp('Training failed');
-        end
         trainingCounter = trainingCounter + 1;
         errorCheckInterval = fixedErrorCheckInterval;
         if currentPoint+errorCheckInterval > n

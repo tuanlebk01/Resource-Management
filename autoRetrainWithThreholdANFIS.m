@@ -4,23 +4,21 @@ clear all
 load cpuFiveMinuteInterval
 %% Initial values.
 originalData = cpuMean;
-inputPercent = 6; % percent unit.
+inputPercent = 6.5; % percent unit.
 n = length(originalData);
 endPoint = round(n*inputPercent/100);
 x = cpuMean(1:endPoint);
 m = length(x);
-interval = 100; % the length of testing data.
 CurrentPoints = []; % to store ponts at which Error reached to the threshold.
-Time = [];
 Error = [];
 alarm = 0; % alarm
 G = 0;
 trainingCounter = 0;
-drift = 500;
+drift = 700;
 efficient = 0.2; % NOTE: this can be changed by varying the size of input when computing mean and ST target.
 errorCheckInterval = 1; 
 fixedErrorCheckInterval = 1; % errorCheckInterval = errorCheckInterval.
-windowSize = 400;
+windowSize = 500;
 increment = 1; % the size of step in computing error.
 trnRatio = 0.7;
 valRatio = 0.15;
@@ -29,7 +27,7 @@ timestep = 1;
 
 %% compare size of input used with the window size.
 if windowSize > endPoint
-    s = round(m*inputPercent/100);
+    s = round(n*inputPercent/100);
     disp('window size is bigger than input data');
     disp(windowSize)
     disp(s)
@@ -70,13 +68,13 @@ fprintf('Threshold: %f\n',threshold);
 fprintf('Error Tolerance: %f\n',drift);
 
 %% fitst input series
-currentPoint = endPoint; % time t.
+currentPoint = endPoint+errorCheckInterval; % time t.
 currentValue = originalData(currentPoint);
 inputSeries = [currentValue currentValue currentValue currentValue];
 %% Compute MAPE and do re-training when meeting the threshold.
 while(1)
     y = evalfis(inputSeries(:,:),net);
-    acutalValues = originalData(currentPoint+errorCheckInterval:currentPoint+errorCheckInterval);
+    acutalValues = originalData(currentPoint+errorCheckInterval+1:currentPoint+errorCheckInterval+1);
     error = mape(acutalValues,y);
     %disp(error);
     Error = [Error error];
@@ -97,39 +95,36 @@ while(1)
         inputData = originalData(1:currentPoint); % NOTE: It may be large.
         [net] = smartTrainingANFIS(net,inputData,windowSize,50);
         trainingCounter = trainingCounter + 1;
-        errorCheckInterval = fixedErrorCheckInterval;
-        if currentPoint+errorCheckInterval > n
+        errorCheckInterval = fixedErrorCheckInterval; % reset
+        if currentPoint+errorCheckInterval +1 > n
             CurrentPoints = [CurrentPoints length(originalData)];
             disp('reached to the end of the series in training phase')
             break
         end  
         % create input data
-        for t1 = currentPoint+errorCheckInterval:currentPoint+errorCheckInterval
-            inputSeries(t1-currentPoint+1,:) = [originalData(t1) originalData(t1) ...
+        t1 = currentPoint+errorCheckInterval;
+        inputSeries = [originalData(t1) originalData(t1) ...
                 originalData(t1) originalData(t1)];
-        end
     else
         % increase errorCheckInterval.
         disp('increase errorCheckInterval.');
         disp(currentPoint+errorCheckInterval);
         errorCheckInterval = errorCheckInterval + increment;
-        if currentPoint+errorCheckInterval > n
+        if currentPoint+errorCheckInterval + 1 > n
             CurrentPoints = [CurrentPoints length(originalData)];
-            Error = [Error error];
             disp('reached to the end of the series increament phase')
             break
         end
-        for t1 = currentPoint+errorCheckInterval:currentPoint+errorCheckInterval
-            inputSeries(t1-currentPoint+1,:) = [originalData(t1) originalData(t1) ...
+        t1 = currentPoint+errorCheckInterval;
+        inputSeries = [originalData(t1) originalData(t1) ...
                 originalData(t1) originalData(t1)];
-        end
     end
-    if trainingCounter > 10000 || currentPoint+errorCheckInterval > n
+    if trainingCounter > 10000 || currentPoint+errorCheckInterval + 1 > n
         CurrentPoints = [CurrentPoints length(originalData)];
-        Error = [Error error];
         disp('reached to the end of the series')
         break
-    end  
+    end
+    alarm = 0; % reset alarm.
 end
 %% compute mean of error durung a whole running.
 
