@@ -15,7 +15,7 @@ alarm = 0; % alarm
 G = 0;
 trainingCounter = 0;
 drift = 700;
-efficient = 0.2; % NOTE: this can be changed by varying the size of input when computing mean and ST target.
+efficient = 2000; % NOTE: this can be changed by varying the size of input when computing mean and ST target.
 errorCheckInterval = 1; 
 fixedErrorCheckInterval = 1; % errorCheckInterval = errorCheckInterval.
 windowSize = 500;
