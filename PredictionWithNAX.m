@@ -2,17 +2,17 @@
 %%%%%% data.
 clear
 close all
-load cpuMean
+load cpuFiveMinuteInterval
 cpuMean = con2seq(cpuMean);
-inputOption = 1; % for changing input data size.
+inputOption = 0; % for changing input data size.
 OverallMape = []; % using when inputOption == 1
 sizeOfStep = 100;
-NumberOfSteps = 20;
+NumberOfSteps = 1;
 for step = 1:NumberOfSteps %% changing input size
     index = 1:step*sizeOfStep;
     T = cpuMean(index);
     if inputOption == 0
-        T = cpuMean;
+        T = cpuMean(1:500);
     end
     %% Choose a Training Function
     trainFcn = 'trainlm';  % Levenberg-Marquardt backpropagation.
@@ -21,6 +21,7 @@ for step = 1:NumberOfSteps %% changing input size
     feedbackDelays = 1:6;
     hiddenLayerSize = 15;
     net = narnet(feedbackDelays,hiddenLayerSize,'open',trainFcn);
+    net.trainParam.showWindow = false;
 
     %% Prepare the Data for Training and Simulation
 
@@ -28,7 +29,7 @@ for step = 1:NumberOfSteps %% changing input size
 
     %% Setup Division of Data for Training, Validation, Testing
     PerformanceMape = [];
-    for trainingSize = 6:6 % from 10% to 90%
+    for trainingSize = 7:7 % from 10% to 90%
         leftParts = (100-trainingSize*10)/2;
         net.divideParam.trainRatio = trainingSize*10/100;
         net.divideParam.valRatio = leftParts/100;

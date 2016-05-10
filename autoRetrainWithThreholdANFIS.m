@@ -1,14 +1,13 @@
 %%%%%% Using ANFIS to predict workload %%%%%%%%%%%%%%%%%%%
 %% load data
-clear all
-load cpuFiveMinuteInterval
+load ramHourMean
 %% Initial values.
-retraining = 1; %% retraining option.
-originalData = cpuMean;
-inputPercent = 6.5; % percent unit.
+retraining = 0; %% retraining option.
+originalData = ramMean;
+inputPercent = 20; % percent unit.
 n = length(originalData);
 endPoint = round(n*inputPercent/100);
-x = cpuMean(1:endPoint);
+x = ramMean(1:endPoint);
 m = length(x);
 CurrentPoints = []; % to store ponts at which Error reached to the threshold.
 Error = [];
@@ -19,7 +18,7 @@ drift = 700;
 efficient = 0.3; % NOTE: this can be changed by varying the size of input when computing mean and ST target.
 errorCheckInterval = 1; 
 fixedErrorCheckInterval = 1; % errorCheckInterval = errorCheckInterval.
-windowSize = 500;
+windowSize = 5;
 increment = 1; % the size of step in computing error.
 trnRatio = 0.7;
 valRatio = 0.15;
@@ -27,8 +26,8 @@ maxStep = 1;
 timestep = 1;
 numMFs = [2 2 2 2];
 numMFs1 = [3 3 3 3];
-inmftype = 'gaussmf';
-inmftype1 = 'gbellmf';
+inmftype1 = 'gaussmf';
+inmftype = 'gbellmf';
 outmftype = 'linear';
 %% compare size of input used with the window size.
 if windowSize > endPoint
@@ -43,8 +42,8 @@ end
 for t = maxStep*3+1:m-maxStep
     Data(t,:) = [x(t-timestep*3) x(t-timestep*2) x(t-timestep) x(t) x(t+timestep)];
 end
-trnData = Data(1:m*trnRatio,:);
-chkData = Data(m*trnRatio : m*trnRatio + valRatio*m,:);
+trnData = Data(1:round(m*trnRatio),:);
+chkData = Data(round(m*trnRatio) : round(m*trnRatio) + round(valRatio*m),:);
 fismat = genfis1(trnData,numMFs,inmftype,outmftype);
 [fismat1,error1,ss,net,error2] = ...
           anfis(trnData,fismat,[],[0 0 0 0],chkData);
@@ -139,7 +138,7 @@ if retraining == 1
     fprintf('MAPE with re-training: %d\n',overallMAPE);
 end %% end re-trainging option.
 fprintf('The length of training input: %d\n',currentPoint1);
-fprintf('MAPE without re-training: %d\n',errorNoRetraining);
+fprintf('ANFIS: MAPE without re-training: %d\n',errorNoRetraining);
 
 %% plot
 % figure(1)

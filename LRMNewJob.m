@@ -1,11 +1,11 @@
-load cpuFiveMinuteInterval.mat
+load ramHourMean.mat
 % endPoint = 101;
 % predicedPoints = 1;
 % Ram = resourceUsage.RAM(1:endPoint,:);
-n = length(cpuMean);
-x = cpuMean;
-startPoint = round(n*0.6);
-endPoint = round(n*0.8);
+n = length(ramMean);
+x = ramMean;
+startPoint = round(n*0.4);
+endPoint = round(n*1)-1;
 %% one-step prediction
 % time = 1:n;
 % Error = [];
@@ -21,16 +21,21 @@ endPoint = round(n*0.8);
 
 % overallError = 22.6614
 %% multi-step prediction
-
+% 
 time = 1:startPoint;
 Error1 = [];
+predictedV = [];
 tic
 model1 = fitlm(time,x(1:startPoint));
 toc
-for i = startPoint+1:startPoint+100
+for i = startPoint+1:endPoint
     predicted = predict(model1,i);
+    predictedV = [predictedV predicted];
     actual = x(i);
     error = mape(predicted,actual);
     Error1 = [Error1 error];
 end
 overallError = mean(Error1)
+actualV = x(startPoint+1:end);
+
+

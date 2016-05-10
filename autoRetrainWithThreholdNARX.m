@@ -1,11 +1,10 @@
 %%%%%   NARX model experiments for auto-retraining with threshold.
 %% load data
-clear
-load cpuHourMean
-originalData = con2seq(cpuMean); % original data.
-%% Option
-trainingOption = 1;
+load ramHourMean
+originalData = con2seq(ramMean); % original data.
+
 %% initial values
+inputPercent = 20; % the size of input data for training, validation and testing.
 retrainingOption = 0;
 OverallMape = [];
 Error = [];
@@ -20,12 +19,11 @@ errorCheckInterval = 3; % MUST BE HIGHER DELAY.
 fixedErrorCheckInterval = 3; % errorCheckInterval = errorCheckInterval.
 windowSize = 10;
 increment = 1; % the size of step in computing error.
-delay = 1;
+delay = 3;
 layerSize = 9;
 trainingCounter = 0;
 %% set what size of input used.
 n = length(originalData);
-inputPercent = 20; % the size of input data for training, validation and testing.
 index = 1:round(n*inputPercent/100);
 if windowSize > round(n*inputPercent/100)
     s = round(n*inputPercent/100);
@@ -145,7 +143,7 @@ if retrainingOption == 1
     fprintf('MAPE with re-training: %d\n',overallMAPE);
 end
 fprintf('The length of training input: %d\n',currentPoint1);
-fprintf('MAPE without re-training: %d\n',error1);
+fprintf('NAR: MAPE without re-training: %d\n',error1);
 
 %% plot
 % figure(1)
