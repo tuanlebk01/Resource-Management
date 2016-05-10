@@ -13,7 +13,7 @@ maxStep = 1;
 overallError = [];
 M = cell(100,1); % to store MAPE array for each training
 numMFs = [2 2 2 2];
-inmftype = 'gbellmf';
+inmftype = 'gaussmf';
 outmftype = 'linear';
 %% multi-step prediction with 100 timesteps ahead.
 for timestep = 1:maxStep
@@ -41,10 +41,12 @@ for timestep = 1:maxStep
     end
     overallError = [overallError meanError];
 end
+fprintf('MAPE: %f\n',overallError);
+
 %% plot error.
-figure(1)
-plot(overallError);
-xlabel('Timestep')
-ylabel('MAPE(%)')
-title('Multi-prediction with ANFIS');
+% figure(1)
+% plot(overallError);
+% xlabel('Timestep')
+% ylabel('MAPE(%)')
+% title('Multi-prediction with ANFIS');
 

@@ -4,19 +4,19 @@ clear all
 load cpuFiveMinuteInterval
 %% Initial values.
 retraining = 1; %% retraining option.
-originalData = cpuMean;
+originalData = rcMean;
 inputPercent = 6.5; % percent unit.
 n = length(originalData);
 endPoint = round(n*inputPercent/100);
-x = cpuMean(1:endPoint);
+x = ramMean(1:endPoint);
 m = length(x);
 CurrentPoints = []; % to store ponts at which Error reached to the threshold.
 Error = [];
 alarm = 0; % alarm
 G = 0;
 trainingCounter = 0;
-drift = 700;
-efficient = 0.3; % NOTE: this can be changed by varying the size of input when computing mean and ST target.
+drift = 800;
+efficient = 0.5; % NOTE: this can be changed by varying the size of input when computing mean and ST target.
 errorCheckInterval = 1; 
 fixedErrorCheckInterval = 1; % errorCheckInterval = errorCheckInterval.
 windowSize = 500;

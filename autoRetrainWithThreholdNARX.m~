@@ -21,7 +21,8 @@ fixedErrorCheckInterval = 3; % errorCheckInterval = errorCheckInterval.
 windowSize = 10;
 increment = 1; % the size of step in computing error.
 delay = 1;
-layerSize = 9;
+layerSize = 9
+;
 trainingCounter = 0;
 %% set what size of input used.
 n = length(originalData);

@@ -1,10 +1,10 @@
 function [net] = trainingNetwork(T,net,threshold,maxIteration)
 %% Code = 1, training is successful otherwise its not successful.
 trainingSize = 7; % 70% percent of data will used to train the method.yy
-trainingData = T(1:0.9*end); % use 90% for training data
-testData = T(0.9*end:end); % 10% for testing
+trainingData = T(1:round(0.9*end)); % use 90% for training data
+testData = T(round(0.9*end):end); % 10% for testing
 counter = 1;
-numNN = 10; % number of network
+numNN = 50; % number of network
 NN = cell(1,numNN);
 perfs = zeros(1,numNN);
 leftParts = (100-trainingSize*10)/2;
