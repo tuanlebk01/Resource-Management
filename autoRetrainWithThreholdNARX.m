@@ -1,10 +1,16 @@
 %%%%%   NARX model experiments for auto-retraining with threshold.
 %% load data
-load ramHourMean
-originalData = con2seq(ramMean); % original data.
-
+clear
+load ramFiveMinuteInterval
+Size = [];
+overallMape = [];
+originalData1 = con2seq(ramMean); % original data.
+z = length(originalData1);
 %% initial values
-inputPercent = 20; % the size of input data for training, validation and testing.
+for percent = 5:80
+
+    originalData = originalData1(1:round(z*percent/100));
+inputPercent = 40; % the size of input data for training, validation and testing.
 retrainingOption = 0;
 OverallMape = [];
 Error = [];
@@ -17,11 +23,12 @@ alarm = 0;
 CurrentPoints = []; % to store ponts at which Error reached to the threshold.
 errorCheckInterval = 3; % MUST BE HIGHER DELAY.
 fixedErrorCheckInterval = 3; % errorCheckInterval = errorCheckInterval.
-windowSize = 10;
+windowSize = 0;
 increment = 1; % the size of step in computing error.
-delay = 3;
-layerSize = 9;
+delay = 2;
+layerSize = 7;
 trainingCounter = 0;
+
 %% set what size of input used.
 n = length(originalData);
 index = 1:round(n*inputPercent/100);
@@ -49,7 +56,7 @@ net.trainParam.showWindow = false;
 %% Training with threshold.
 [net] = trainingNetwork(T,net,70,1);
 %% runing without re-training.
-currentPoint1 = round(n*inputPercent/100); % the end point of input data.
+currentPoint1 = round(n*81/100); % the end point of input data.
 index = currentPoint1:n; % compute error with first errorCheckInterval data points.
 inputSeries1 = originalData(index);
 [xs,xis,ais,ts] = preparets(net,{},{},inputSeries1);
@@ -142,10 +149,17 @@ if retrainingOption == 1
     overallMAPE = mean(Error);
     fprintf('MAPE with re-training: %d\n',overallMAPE);
 end
-fprintf('The length of training input: %d\n',currentPoint1);
+fprintf('The length of training input: %d\n',round(n*inputPercent/100));
 fprintf('NAR: MAPE without re-training: %d\n',error1);
-
+size = round(n*inputPercent/100);
+Size = [Size size];
+overallMape = [overallMape error1];
+end
 %% plot
+figure(1)
+plot(Size,overallMape);
+xlabel('Size of input data')
+ylabel('MAPE(%)')
 % figure(1)
 % stem(CurrentPoints)
 % xlabel('Number of training times')

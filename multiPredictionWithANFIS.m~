@@ -10,12 +10,12 @@ errorCheck = [];
 errorTest = [];
 trnRatio = 0.7;
 valRatio = 0.15;
-maxStep = 100;
+maxStep = 50;
 overallError = [];
 numMFs = [2 2 2 2];
 inmftype = 'gbellmf';
 outmftype = 'linear';
-point = round(n*0.2); % 60% left for buiding a model
+point = round(n*0.4); % 60% left for buiding a model
 startP = randi([point n-maxStep],1,1)
 %% multi-step prediction with 100 timesteps ahead.
 for timestep = 1:maxStep
@@ -40,7 +40,7 @@ meanError = mean(errorTest);
 
 overallMape = [overallMape meanError];
 end
-fprintf('MAPE: %f\n',mean(overallMape));
+fprintf('MAPE: %f\n',overallMape);
 %% plot error.
 figure(1)
 plot(overallMape);

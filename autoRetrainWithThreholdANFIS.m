@@ -1,13 +1,18 @@
 %%%%%% Using ANFIS to predict workload %%%%%%%%%%%%%%%%%%%
-%% load data
-load ramHourMean
+%% load data ramOneMinuteInterval ramHourMean
+% clear
+load cpuFiveMinuteInterval
+s = length(cpuMean);
+overallMape = [];
+Sizes = [];
+for percent = 5:80
 %% Initial values.
 retraining = 0; %% retraining option.
-originalData = ramMean;
-inputPercent = 20; % percent unit.
+originalData = cpuMean;
+inputPercent = percent; % percent unit.
 n = length(originalData);
 endPoint = round(n*inputPercent/100);
-x = ramMean(1:endPoint);
+x = originalData(1:endPoint);
 m = length(x);
 CurrentPoints = []; % to store ponts at which Error reached to the threshold.
 Error = [];
@@ -18,7 +23,7 @@ drift = 700;
 efficient = 0.3; % NOTE: this can be changed by varying the size of input when computing mean and ST target.
 errorCheckInterval = 1; 
 fixedErrorCheckInterval = 1; % errorCheckInterval = errorCheckInterval.
-windowSize = 5;
+windowSize = 0;
 increment = 1; % the size of step in computing error.
 trnRatio = 0.7;
 valRatio = 0.15;
@@ -48,7 +53,7 @@ fismat = genfis1(trnData,numMFs,inmftype,outmftype);
 [fismat1,error1,ss,net,error2] = ...
           anfis(trnData,fismat,[],[0 0 0 0],chkData);
   %% runing without re-training.
-currentPoint1 = round(n*inputPercent/100); % the end point of input data.
+currentPoint1 = round(n*81/100); % the end point of input data.
 index = currentPoint1:n; % compute error with first errorCheckInterval data points.
 for t1 = currentPoint1:n-1
         testingData(t1-currentPoint1+1,:) = [originalData(t1) originalData(t1) originalData(t1) originalData(t1)];
@@ -137,9 +142,18 @@ if retraining == 1
     overallMAPE = mean(Error);
     fprintf('MAPE with re-training: %d\n',overallMAPE);
 end %% end re-trainging option.
-fprintf('The length of training input: %d\n',currentPoint1);
+fprintf('The length of training input: %d\n',endPoint);
 fprintf('ANFIS: MAPE without re-training: %d\n',errorNoRetraining);
+size = endPoint;
+Sizes = [Sizes size];
+overallMape = [overallMape errorNoRetraining];
 
+
+end
+figure(1)
+plot(Sizes,overallMape);
+xlabel('Size of training data')
+ylabel('MAPE(%)')
 %% plot
 % figure(1)
 % stem(CurrentPoints)

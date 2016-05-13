@@ -1,16 +1,17 @@
 clear
 load cpuFiveMinuteInterval
+
 % endPoint = 101;
 % predicedPoints = 1;
 % Ram = resourceUsage.RAM(1:endPoint,:);
 input = cpuMean;
 n = length(input);
-x = input;
 overallMape = [];
-for i = 1:10
-point = round(n*0.4);
-startPoint = randi([point n-100],1,1)
-endPoint = round(n*1)-1;
+Size = [];
+for percent = 5:80
+x = input(1:round(pecent/100*n));
+startPoint = round(n*0.4);
+endPoint = round(n*0.81)-1;
 %% one-step prediction
 % time = 1:n;
 % Error = [];
@@ -27,22 +28,24 @@ endPoint = round(n*1)-1;
 % overallError = 22.6614
 %% multi-step prediction
 % 
-time = 1:point;
+time = 1:startPoint;
 Error1 = [];
 predictedV = [];
 tic
-model1 = fitlm(time,x(1:point));
+model1 = fitlm(time,x(1:startPoint));
 toc
-for i = startPoint+1:startPoint + 101
+for i = startPoint+1:endPoint
     predicted = predict(model1,i);
     predictedV = [predictedV predicted];
     actual = x(i);
     error = mape(actual,predicted);
     Error1 = [Error1 error];
 end
-overallError = mean(Error1)
+overallError = mean(Error1);
 actualV = x(startPoint+1:end);
-overallMape = [overallMape overallError];
+
+overallMape = [overallMape overallError]
+Size = [Size size];
 end
 
-error = mean(overallMape)
+
