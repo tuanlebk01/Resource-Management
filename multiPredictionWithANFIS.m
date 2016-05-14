@@ -1,10 +1,11 @@
 %%%%%% Using ANFIS to predict workload %%%%%%%%%%%%%%%%%%%
 %% load data and initial data
 clear
-load cpuFiveMinuteInterval.mat
+load cpuHourMean
 x = cpuMean;  % input data which is removed the last 500 data points.;
 overallMape = [];
 for i = 1:10
+    index = 1;
 n = length(x);
 errorCheck = [];
 errorTest = [];
@@ -20,10 +21,11 @@ startP = randi([point n-maxStep],1,1)
 %% multi-step prediction with 100 timesteps ahead.
 for timestep = 1:maxStep
     %% Create training, validation data for the method.
-    for t = maxStep*3+1:point-maxStep
-        Data(t,:) = [x(t-timestep*3) x(t-timestep*2) x(t-timestep) x(t) x(t+timestep)];
+    for t = timestep*3+1:point-timestep
+        Data(index,:) = [x(t-timestep*3) x(t-timestep*2) x(t-timestep) x(t) x(t+timestep)];
+        index = index +1;
     end
-    n = t;
+    n = index;
     trnData = Data(1:round(n*trnRatio),:);
     chkData = Data(round(n*trnRatio) : round(n*trnRatio) + round(valRatio*n),:);
     fismat = genfis1(trnData,numMFs,inmftype,outmftype);

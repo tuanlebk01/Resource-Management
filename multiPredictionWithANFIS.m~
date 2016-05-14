@@ -1,7 +1,7 @@
 %%%%%% Using ANFIS to predict workload %%%%%%%%%%%%%%%%%%%
 %% load data and initial data
 clear
-load cpuFiveMinuteInterval.mat
+load cpuHourMean
 x = cpuMean;  % input data which is removed the last 500 data points.;
 overallMape = [];
 for i = 1:10
@@ -10,17 +10,17 @@ errorCheck = [];
 errorTest = [];
 trnRatio = 0.7;
 valRatio = 0.15;
-maxStep = 50;
+maxStep = 100;
 overallError = [];
 numMFs = [2 2 2 2];
 inmftype = 'gbellmf';
 outmftype = 'linear';
-point = round(n*0.4); % 60% left for buiding a model
+point = round(n*0.3); % 60% left for buiding a model
 startP = randi([point n-maxStep],1,1)
 %% multi-step prediction with 100 timesteps ahead.
 for timestep = 1:maxStep
     %% Create training, validation data for the method.
-    for t = maxStep*3+1:point-maxStep
+    for t = timestep*3+1:point-timestep
         Data(t,:) = [x(t-timestep*3) x(t-timestep*2) x(t-timestep) x(t) x(t+timestep)];
     end
     n = t;
@@ -40,7 +40,7 @@ meanError = mean(errorTest);
 
 overallMape = [overallMape meanError];
 end
-fprintf('MAPE: %f\n',overallMape);
+fprintf('MAPE: %f\n',mean(overallMape));
 %% plot error.
 figure(1)
 plot(overallMape);

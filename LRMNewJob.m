@@ -1,5 +1,5 @@
 clear
-load cpuFiveMinuteInterval
+load cpuHourMean
 % endPoint = 101;
 % predicedPoints = 1;
 % Ram = resourceUsage.RAM(1:endPoint,:);
@@ -8,7 +8,7 @@ n = length(input);
 x = input;
 overallMape = [];
 for i = 1:10
-point = round(n*0.4);
+point = round(n*0.1);
 startPoint = randi([point n-100],1,1)
 endPoint = round(n*1)-1;
 %% one-step prediction
