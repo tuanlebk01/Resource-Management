@@ -2,13 +2,13 @@
 %% Load data and initial values
 clear all
 close all
-load ramHourMean
+load ramOneMinuteInterval.mat
 cpuMean = con2seq(ramMean);
 %N = 300; % skip the last 300 data points.
 T = cpuMean;
 n = length(T);
 maxStep = 10; % 10 step ahead prediction.
-point = round(n*0.2); % 60% left for buiding a model
+point = round(n*0.); % 60% left for buiding a model
 inputdata = T(1:point);
 delay = 2;
 predictedY = []; % to store predicted values

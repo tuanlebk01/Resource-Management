@@ -1,7 +1,7 @@
 %%%%%% Using ANFIS to predict workload %%%%%%%%%%%%%%%%%%%
 %% load data and initial data
 clear
-load cpuTwoMinuteInterval
+load cpuOneMinuteInterval
 x = cpuMean;  % input data which is removed the last 500 data points.;
 overallMape = [];
 for i = 1:10
@@ -16,7 +16,7 @@ overallError = [];
 numMFs = [2 2 2 2];
 inmftype = 'gaussmf';
 outmftype = 'linear';
-point = round(n*0.2); % 60% left for buiding a model
+point = round(n*0.1); % 60% left for buiding a model
 startP = randi([point n-maxStep],1,1)
 %% multi-step prediction with 100 timesteps ahead.
 for timestep = 1:maxStep
